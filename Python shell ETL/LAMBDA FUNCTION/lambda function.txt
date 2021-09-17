@@ -1,0 +1,17 @@
+import json
+import boto3
+ 
+def lambda handler(event, context)    #takes a function called lambda handler with two parameters event and context
+	client = boto3.client('glue') #creating a client object using the boto3 library and the client is glue
+	
+	client.start_job_run(   #an inbuilt function which takes two arguments
+		JobName = 'glue_import_RE_REFUND_STATUS_hourly,
+		Arguments = {}
+	}
+	return {
+	     'statusCode' : 200,
+	     'body' : json.dumps('glue_imprt_RE_REFUND_STATUS_hourly triggered')
+	}
+	
+	
+	

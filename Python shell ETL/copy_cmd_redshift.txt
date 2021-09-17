@@ -1,0 +1,12 @@
+copy mysql_dwh.rp_sub_day from 's3://REFUND-KDOR/historical/rp_sub_day.csv'
+iam_role 'arn:aws:iam::510342547048:role/s3redshift'
+CSV QUOTE '\"' DELIMITER ','
+acceptinvchars;
+
+
+copy mysql_dwh.rp_sub_detail from 's3://REFUND-KDOR/historical/rp_sub_detail.csv'
+iam_role 'arn:aws:iam::510342547048:role/s3redshift'
+CSV QUOTE '\"' DELIMITER ','
+acceptinvchars;
+
+

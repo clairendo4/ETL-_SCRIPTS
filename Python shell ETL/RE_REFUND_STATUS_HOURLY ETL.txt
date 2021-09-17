@@ -1,0 +1,38 @@
+import boto3,json 
+from pg import DB 
+
+secret_name = 'sid-redshftrrs'
+region_name ='eu-west-1'
+
+session = boto3.session.Session()
+
+client = session.client(service_name='secretsmanager',region_name=region_name)
+
+get_secret_value_response = client.get_secret_value(SecretId=secret_name)
+
+creds = json.loads(get_secret_value_response['SecretString'])
+
+username = creds['username']
+password = creds['password']
+host = creds['host']
+
+db = DB(dbname='prod',host=host,port=5439,user=username,passwd=password)
+
+merge_qry = """
+			begin ; 
+			copy mysql_dwh_staging. RE_REFUND_STATUS from 's3://bucket-name/ RE_REFUND_STATUS/current/ RE_REFUND_STATUS.csv'
+			iam_role 'YOUR_ARN'
+			CSV QUOTE '\"' DELIMITER ','
+			acceptinvchars;
+			delete 
+				from 
+					mysql_dwh. RE_REFUND_STATUS 
+				using mysql_dwh_staging. RE_REFUND_STATUS 
+				where mysql_dwh. RE_REFUND_STATUS.SSN = mysql_dwh_staging. RE_REFUND_STATUS.SSN ;
+			insert into mysql_dwh. RE_REFUND_STATUS select * from mysql_dwh_staging. RE_REFUND_STATUS;
+			truncate table mysql_dwh_staging. RE_REFUND_STATUS;
+			end ; 
+			"""
+
+result = db.query(merge_qry)
+print(result)
