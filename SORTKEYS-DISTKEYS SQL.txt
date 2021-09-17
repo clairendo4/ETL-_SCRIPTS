@@ -1,0 +1,28 @@
+SELECT * 
+FROM pg_table_def
+WHERE schemaname = 'mysql_dwh'
+
+
+SELECT
+ "column",
+  type,
+  distkey,
+  sortkey
+FROM
+  pg_table_def
+WHERE 
+  schemaname = 'mysql_dwh'
+AND
+  tablename = 'RP_SUB_DETAIL'
+
+CREATE TABLE mysql.dwh.RP_SUB_DETAIL TEST AS select * FROM mysql.dwh.RP_SUB_DETAIL
+
+
+ALTER TABLE mysql_dwh.RP_SUB_DETAIL_TEST
+ALTER COMPOUND SORTKEY(timestamp,SSN)
+
+ALTER TABLE mysql_dwh.RP_SUB_DETAIL_TEST
+ALTER DISTKEY file_type
+
+ALTER TABLE RP_SUB_DETAIL_TEST RENAME TO RP_SUB_DETAIL_OPTIMIZED
+
