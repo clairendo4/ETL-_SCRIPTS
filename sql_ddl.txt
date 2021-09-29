@@ -1,0 +1,37 @@
+create table data_engineering.locations
+( id int(10) primary key autoincrement,
+ location varchar(20),
+ created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ deleted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+ );
+
+create table data_engineering.user_class
+( id int(10) primary key autoincrement,
+ usr_class varchar(20),
+ created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ deleted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+ );
+
+ create table data_engineering.specialities
+( id int(10) primary key autoincrement,
+ speciality varchar(20),
+ created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ deleted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+ );
+
+create table data_engineering.users
+( id int(10) primary key autoincrement,
+ first_name varchar(20),
+ last_name varchar(20),
+ last_active_date date,
+ is_active boolean,
+ location_id int(10) foriegn key,
+ user_class_id int(10) foreign key,
+ speciality_id int(10) foreign key,
+ created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ deleted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+ );

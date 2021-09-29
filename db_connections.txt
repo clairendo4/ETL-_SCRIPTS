@@ -1,0 +1,5 @@
+host=candidate-coding-challenge.dox.pub
+port=3316
+database=data_engineer
+password=P8MWmPPBLhhLX79n
+user=de_candidate

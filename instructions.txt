@@ -1,0 +1,4 @@
+1. Pre-install the requirements
+2. run main.py (preferbly pycharm or command line should be okay)
+3. If you are running from command line ( you will have to setup python path environment variable)
+    - https://bic-berkeley.github.io/psych-214-fall-2016/using_pythonpath.html (Reference)
