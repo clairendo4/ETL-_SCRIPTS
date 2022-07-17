@@ -1,0 +1,88 @@
+
+import datetime
+import io
+import logging
+import os
+import boto3
+import botocore.exceptions
+import pandas as pd
+
+import paramiko
+
+s3=boto3.client('s3')
+logging.basicConfig(format = '%(asctime)s %(message)s')
+logger = logging.getLogger()
+logger.setLevel(os.getenv('LOGGING_LEVEL', 'INFO'))
+
+SSH_HOST = os.environ['SSH_HOST']
+SSH_USERNAME = os.environ['SSH_USERNAME']
+SSH_PASSWORD = os.getenv('SSH_PASSWORD')
+# # path to a private key file if any in s3... in 'bucket:key' format.
+SSH_PRIVATE_KEY = os.getenv('SSH_PRIVATE_KEY')
+assert SSH_PASSWORD or SSH_PRIVATE_KEY, "Missing SSH_PASSWORD or SSH_PRIVATE_KEY"
+# optional
+SSH_PORT = int(os.getenv('SSH_PORT', 22))
+SSH_DIR = os.getenv('SSH_DIR')
+def lambda_handler(event, context):
+    logger.info(f"S3-SFTP: received trigger event")
+    
+    sftp_client, transport = connect_to_sftp(
+        hostname=SSH_HOST,
+        port=SSH_PORT,
+        username=SSH_USERNAME,
+        password=SSH_PASSWORD,
+        # pkey=key_obj
+    )
+    if SSH_DIR:
+        sftp_client.chdir(SSH_DIR)
+        logger.debug(f"S3-SFTP: Switched into remote SFTP upload directory")
+    
+    for s3_file in s3_files(event):
+        bucket = s3_file.bucket_name
+        key = s3_file.key
+        if 'parquet' in key:
+            df = pd.read_parquet(f's3://{bucket}/{key}', engine='auto')
+            with sftp_client.open(f"new_{key.split('/')[-1]}", 'w', 32768) as sftp_file:
+                sftp_file.write(df.to_parquet(index=False))
+        else:
+            with sftp_client.open(f"new_{key.split('/')[-1]}", 'w', 32768) as sftp_file:
+                s3_file.download_fileobj(Fileobj=sftp_file)
+        delete_file(s3_file)
+        logger.info(f"S3-SFTP: bucket : {bucket} {key}")
+    transport.close()
+    logger.info(f"S3-SFTP: Completed")
+
+def connect_to_sftp(hostname, port, username, password):
+    """Connect to SFTP server and return client object."""
+    transport = paramiko.Transport((hostname, port))
+    transport.connect(username=username, password=password)
+    client = paramiko.SFTPClient.from_transport(transport)
+    logger.debug(f"S3-SFTP: Connected to remote SFTP server")
+    return client, transport
+
+def s3_files(event):
+ 
+    for record in event['Records']:
+        bucket = record['s3']['bucket']['name']
+        key = record['s3']['object']['key']
+        event_category, event_subcat = record['eventName'].split(':')
+        if event_category == 'ObjectCreated':
+            logger.info(f"S3-SFTP: Received '{ event_subcat }' trigger on '{ key }'")
+            yield boto3.resource('s3').Object(bucket, key)
+        else:
+            logger.warning(f"S3-SFTP: Ignoring invalid event: { record }")
+
+
+def delete_file(s3_file):
+    """
+    Delete file from S3.
+    """
+    try:
+        s3_file.delete()
+    except botocore.exceptions.BotoCoreError as ex:
+        logger.exception(f"S3-SFTP: Error deleting '{ s3_file.key }' from S3.")
+    else:
+        logger.info(f"S3-SFTP: Deleted '{ s3_file.key }' from S3")
+
+
+
