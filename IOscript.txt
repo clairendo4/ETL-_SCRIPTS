@@ -1,0 +1,55 @@
+import json
+import dsselambdaiodecisionengineclass as dec
+import dsselambdaiodecisionengineutils as deu
+import logging
+from datetime import datetime
+import boto3
+import os
+import re
+
+io_landing = os.environ['IO_LANDING_BUCKET']
+
+def lambda_handler(event, context):
+    if isinstance(event["body"], str):
+        event = json.loads(event["body"])
+    else:
+        event = event["body"]
+    
+    print('Request event:',str(event))
+    
+    try:
+        decisionData = deu.return_member_policy_data(event)
+        member = dec.Member(event)
+        agent = dec.Agent(deu.return_agent_licensure_status(event))
+        offer = dec.Offer(member, agent)
+        offer.decision_engine(decisionData, agent)
+        print("Offer:", json.dumps(offer.offerData))
+        
+        save_to_bucket(offer.offerData)
+        
+        return {"statusCode": 200, "body": json.dumps(offer.offerData)}
+
+    except Exception as e:
+        print("other unspecified error is,e")
+        logging.error(e)
+
+        return {"statusCode": 400, "body": json.dumps(str(e))}
+        
+def save_to_bucket(offerInfo):
+    s3 = boto3.resource('s3')
+    bucket = s3.Bucket(io_landing)
+    today = datetime.now()
+    year = today.strftime('%Y')
+    month = today.strftime('%m')
+    day = today.strftime('%d')
+    datefmt = 'year={0}/month={1}/day={2}'.format(year, month, day)
+    timestamp = re.sub('[^0-9]','',str(today))
+    path = 'offer_data/'+ datefmt +'/offer_data_'+ timestamp + '.json'
+    data = '{}'.format(offerInfo)
+    resp = bucket.put_object(
+        ContentType='application/json',
+        Key=path,
+        Body=data,
+    )
+
+    print('save to io landing bucket:',resp)
